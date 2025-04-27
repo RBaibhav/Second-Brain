@@ -106,7 +106,31 @@ app.get("/api/v1/content", auth, async (req, res) => {
   });
 });
 
-app.delete("/api/v1/content", (req, res) => {});
+app.delete("/api/v1/content", auth, async (req, res) => {
+  const userId = req.userId;
+  const contentId = req.body.contentId;
+
+  if (!contentId) {
+    res.status(400).json({
+      message: "Content ID required",
+    });
+    return;
+  }
+
+  const deletedContent = await Content.findOneAndDelete({
+    _id: contentId,
+    userId: userId,
+  });
+
+  if (!deletedContent) {
+    res.status(403).json({
+      message: "Content not found",
+    });
+  }
+  res.status(200).json({
+    message: "successfully deleted",
+  });
+});
 
 app.post("/api/v1/brain/share", (req, res) => {});
 
