@@ -3,5 +3,6 @@ declare namespace NodeJS {
     PORT: string;
     SALT: string;
     DATABASE_URL: string;
+    JWT_SECRET: string;
   }
 }
