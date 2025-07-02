@@ -68,7 +68,7 @@ app.post("/api/v1/login", async (req, res) => {
   return;
 });
 
-app.post("/api/v1/content", auth, async (req, res) => {
+app.post("/api/v1/contents", auth, async (req, res) => {
   const { link, title, type, tags } = req.body;
   const userId = req.userId;
 
