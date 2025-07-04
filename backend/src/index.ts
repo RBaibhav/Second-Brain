@@ -2,10 +2,11 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
-import { Content, User } from "./db";
+import { Content, Link, User } from "./db";
 import { auth } from "./middleware";
 
 import * as dotenv from "dotenv";
+import { random } from "./utils";
 dotenv.config();
 
 const app = express();
@@ -132,9 +133,78 @@ app.delete("/api/v1/content", auth, async (req, res) => {
   });
 });
 
-app.post("/api/v1/brain/share", (req, res) => {});
+app.post("/api/v1/brain/share", auth, async (req, res) => {
+  const share = req.body.share;
 
-app.get("/api/v1/brain/:sharelink", (req, res) => {});
+  if (share) {
+    const existingLink = await Link.findOne({
+      userId: req.userId,
+    });
+    if (existingLink) {
+      res.status(400).json({
+        message: "Share link already exists",
+      });
+      return;
+    }
+    const hash = random(10);
+
+    await Link.create({
+      hash: hash,
+      userId: req.userId,
+    });
+    res.status(201).json({
+      message: "Share link created successfully",
+      shareLink: `${req.protocol}://${req.get("host")}/api/v1/brain/${hash}`,
+    });
+    return;
+  } else {
+    await Link.deleteOne({
+      userId: req.userId,
+    });
+    res.status(200).json({
+      message: "Share link deleted successfully",
+    });
+    return;
+  }
+});
+
+app.get("/api/v1/brain/:sharelink", async (req, res) => {
+  const hash = req.params.sharelink;
+
+  const link = await Link.findOne({
+    hash,
+  });
+
+  if (!link) {
+    res.status(404).json({
+      message: "Share link not found",
+    });
+    return;
+  }
+
+  const content = await Content.find({
+    userId: link.userId,
+  });
+  
+  const user = await User.findOne({
+    _id: link.userId,
+  })
+  
+  if(!user) {
+    res.status(404).json({
+      message: "User not found",
+    });
+    return;
+  }
+
+  res.status(200).json({
+    user: {
+      username: user.username,
+    },
+    content,
+  });
+  return;
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
